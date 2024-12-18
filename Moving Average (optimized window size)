@@ -1,0 +1,81 @@
+# Initialize lists for storing results
+Results = []
+MAE = []
+MSE = []
+MAPE = []
+SMAPE = []
+TEST = []
+COMPUTATIONAL_TIME = []
+BEST_WINDOW_SIZE = []
+
+# Define helper functions
+def smape(y_test, y_pred):
+    return np.mean((2 * np.abs(y_pred - y_test)) / (np.abs(y_test) + np.abs(y_pred)))
+
+def mape(y_test, y_pred):
+    return np.mean(np.abs(y_test - y_pred) / np.abs(y_test))
+
+def moving_average_forecast(train, window_size, horizon=56):
+    y_pred = []
+    for i in range(horizon):
+        if i < window_size:
+            avg = np.mean(train[-window_size + i:])
+        else:
+            avg = np.mean(y_pred[-window_size:])
+        y_pred.append(avg)
+    return np.array(y_pred)
+
+# Split data into training and test sets
+train_data = NN5.iloc[:735]
+test_data = NN5.iloc[735:]
+
+# Loop over each column to generate forecasts and calculate errors
+for i in range(1, 112):
+    y_train = np.array(train_data.iloc[:, i])
+    y_test = np.array(test_data.iloc[:, i])
+
+    best_window_size = None
+    best_mae = float('inf')
+    best_forecast = None
+
+    for window_size in range(1, 29):
+        start_time = time.time()  # Start time before training
+
+        y_pred = moving_average_forecast(y_train, window_size)
+
+        end_time = time.time()  # End time after training
+
+        mae = mean_absolute_error(y_test, y_pred)
+
+        if mae < best_mae:
+            best_mae = mae
+            best_window_size = window_size
+            best_forecast = y_pred
+
+    computational_time = end_time - start_time
+    COMPUTATIONAL_TIME.append(computational_time)
+
+    mae = mean_absolute_error(y_test, best_forecast)
+    mse = mean_squared_error(y_test, best_forecast)
+
+    MAE.append(mae)
+    MSE.append(mse)
+    MAPE.append(mape(y_test, best_forecast))
+    SMAPE.append(smape(y_test, best_forecast))
+
+    Results.append(best_forecast)
+    TEST.append(y_test)
+    BEST_WINDOW_SIZE.append(best_window_size)
+
+# Create DataFrames for errors, forecasts, computational time, and best window sizes
+error = [MAE, MSE, MAPE, SMAPE]
+Error = pd.DataFrame(error, index=["MAE", "MSE", "MAPE", "SMAPE"]).T
+Forecast = pd.DataFrame(Results).T
+ComputationalTime = pd.DataFrame(COMPUTATIONAL_TIME, columns=["Computational Time"])
+BestWindowSize = pd.DataFrame(BEST_WINDOW_SIZE, columns=["Best Window Size"])
+
+# Save results to CSV files
+Error.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/MovingAverageError.csv', index=False)
+Forecast.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/MovingAverageForecast.csv', index=False)
+ComputationalTime.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/MovingAverageComputationalTime.csv', index=False)
+BestWindowSize.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/MovingAverageBestWindowSize.csv', index=False)

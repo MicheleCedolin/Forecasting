@@ -1,0 +1,48 @@
+Results = []
+MAE = []
+MSE = []
+MAPE = []
+SMAPE = []
+TEST = []
+COMPUTATIONAL_TIME = []
+
+def smape(y_test,y_pred):
+    return np.mean((2* np.abs(y_pred - y_test))/ ((np.abs(y_test) + np.abs(y_pred))))
+
+def mape(y_test,y_pred):
+    return np.mean(np.abs(y_test - y_pred)/np.abs(y_test))
+
+train_data = NN5.iloc[:735] #ilk 7 satiri lag degerleri na oldugu icin dikkate almadik yoksa 0:int olmasi lazim
+test_data = NN5.iloc[735:]
+
+y_train = np.array(train_data.iloc[:,[i]])
+y_test = np.array(test_data.iloc[:,[i]])
+
+for i in range(1,112):
+  start_time = time.time()  # Start time before training
+  y_pred = np.full(56, NN5.iloc[735,i])  # Create an array of 56 values
+  end_time = time.time()  # End time after training
+
+  computational_time = end_time - start_time
+  COMPUTATIONAL_TIME.append(computational_time)
+
+  mae = mean_absolute_error(y_test, y_pred)
+  mse = mean_squared_error(y_test, y_pred)
+
+  MAE.append(mae)
+  MSE.append(mse)
+  MAPE.append(mape(y_test, y_pred))
+  SMAPE.append(smape(y_test, y_pred))
+
+  Results.append(y_pred)
+  TEST.append(y_test)
+
+error = [MAE, MSE, MAPE, SMAPE]
+Error = pd.DataFrame(error, index=["MAE", "MSE", "MAPE", "SMAPE"]).T # Use index to label rows instead of columns
+Forecast = pd.DataFrame(Results).T
+BestPolynom = pd.DataFrame(POLYNOMIAL)
+ComputationalTime = pd.DataFrame(COMPUTATIONAL_TIME, columns=["Computational Time"])
+
+Error.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/NaiveError.csv', index=False)
+Forecast.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/NaiveForecast.csv', index=False)
+ComputationalTime.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/NaiveComputationalTime.csv', index=False)

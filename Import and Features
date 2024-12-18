@@ -1,0 +1,86 @@
+from google.colab import drive
+drive.mount('/content/drive')
+
+pip install gmdh
+pip install pyGRNN
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import tensorflow as tf
+import time
+import math
+import matplotlib
+import datetime as dt
+import gmdh
+import lightgbm as lgb
+from gmdh import Combi, split_data
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
+from pyGRNN import GRNN
+from matplotlib import pyplot as plt
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, LSTM
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from datetime import timedelta
+from sklearn.svm import SVR
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.datasets import make_regression
+from sklearn.model_selection import train_test_split
+from keras.optimizers import SGD
+from statsmodels.tsa.forecasting.theta import ThetaModel
+
+from keras.models import Sequential
+from keras.layers import LSTM
+from keras.layers import Dense
+from keras.layers import SimpleRNN
+from keras.layers import Dropout
+from keras.layers import GRU, Bidirectional
+from keras.optimizers import SGD
+from sklearn import metrics
+from sklearn.metrics import mean_squared_error
+
+NN5 = pd.read_excel('/content/drive/MyDrive/Comparative Forecasting/NN5.xlsx')
+NN5['Date'].dtype
+features = NN5.copy()
+features['year'] = NN5['Date'].dt.year
+features['month'] = NN5['Date'].dt.month
+features['day'] = NN5['Date'].dt.day
+features['weekday'] = NN5['Date'].dt.weekday
+#features['weekofyear'] = NN5['Date'].dt.weekofyear
+features['weekofyear'] = NN5['Date'].dt.isocalendar().week
+features['Date'] = features.index-features.index[0]
+
+Results = []
+MAE = []
+MSE = []
+MAPE = []
+SMAPE = []
+TEST = []
+POLYNOMIAL = []
+
+def smape(y_test,y_pred):
+    return np.mean((2* np.abs(y_pred - y_test))/ ((np.abs(y_test) + np.abs(y_pred))))
+
+def mape(y_test,y_pred):
+    return np.mean(np.abs(y_test - y_pred)/np.abs(y_test))
+
+for i in range(1,112):
+  features['lag1']=NN5.iloc[:,i].shift(1)
+  features['lag2']=NN5.iloc[:,i].shift(2)
+  features['lag3']=NN5.iloc[:,i].shift(3)
+  features['lag4']=NN5.iloc[:,i].shift(4)
+  features['lag5']=NN5.iloc[:,i].shift(5)
+  features['lag6']=NN5.iloc[:,i].shift(6)
+  features['lag7']=NN5.iloc[:,i].shift(7)
+  features['Roll_mean']=NN5.iloc[:,i].rolling(window=7).mean()
+  train_data = features.iloc[8:int(features.shape[0]*0.93)] #ilk 7 satiri lag degerleri na oldugu icin dikkate almadik yoksa 0:int olmasi lazim
+  test_data = features.iloc[int(features.shape[0]*0.93):]
+  x_train = np.array(train_data[['weekday','lag1','lag2','lag3','lag4','lag5','lag6','lag7','Roll_mean']])
+  x_test = np.array(test_data[['weekday','lag1','lag2','lag3','lag4','lag5','lag6','lag7','Roll_mean']])
+  y_train = np.array(train_data.iloc[:,[i]])
+  y_test = np.array(test_data.iloc[:,[i]])

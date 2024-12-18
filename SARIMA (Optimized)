@@ -1,0 +1,90 @@
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+# Initialize lists for storing results
+Results = []
+MAE = []
+MSE = []
+MAPE = []
+SMAPE = []
+TEST = []
+COMPUTATIONAL_TIME = []
+BEST_ORDER = []
+BEST_SEASONAL_ORDER = []
+
+# Define helper functions
+def smape(y_test, y_pred):
+    return np.mean((2 * np.abs(y_pred - y_test)) / (np.abs(y_test) + np.abs(y_pred)))
+
+def mape(y_test, y_pred):
+    return np.mean(np.abs(y_test - y_pred) / np.abs(y_test))
+
+# Split data into training and test sets
+train_data = NN5.iloc[:735]
+test_data = NN5.iloc[735:]
+
+# Loop over each column to generate forecasts and calculate errors
+for i in range(1, 112):
+    y_train = np.array(train_data.iloc[:, i])
+    y_test = np.array(test_data.iloc[:, i])
+
+    best_order = None
+    best_seasonal_order = None
+    best_mae = float('inf')
+    best_forecast = None
+
+    # Loop over possible (p, d, q) orders
+    for p in range(0, 3):
+        for d in range(0, 2):
+            for q in range(0, 3):
+                # Loop over possible seasonal (P, D, Q, s) orders
+                for P in range(0, 2):
+                    for D in range(0, 1):
+                        for Q in range(0, 2):
+                            for s in [7, 28]:  # Example seasonal periods
+                                try:
+                                    start_time = time.time()  # Start time before training
+
+                                    # Fit the SARIMA model
+                                    model = SARIMAX(y_train, order=(p, d, q), seasonal_order=(P, D, Q, s)).fit()
+
+                                    # Generate forecasts
+                                    y_pred = model.forecast(steps=56)
+
+                                    end_time = time.time()  # End time after training
+
+                                    mae = mean_absolute_error(y_test, y_pred)
+
+                                    if mae < best_mae:
+                                        best_mae = mae
+                                        best_order = (p, d, q)
+                                        best_seasonal_order = (P, D, Q, s)
+                                        best_forecast = y_pred
+                                        computational_time = end_time - start_time
+                                except:
+                                    continue
+
+    if best_forecast is not None:
+        COMPUTATIONAL_TIME.append(computational_time)
+        MAE.append(best_mae)
+        MSE.append(mean_squared_error(y_test, best_forecast))
+        MAPE.append(mape(y_test, best_forecast))
+        SMAPE.append(smape(y_test, best_forecast))
+        Results.append(best_forecast)
+        TEST.append(y_test)
+        BEST_ORDER.append(best_order)
+        BEST_SEASONAL_ORDER.append(best_seasonal_order)
+
+# Create DataFrames for errors, forecasts, computational time, and best orders
+error = [MAE, MSE, MAPE, SMAPE]
+Error = pd.DataFrame(error, index=["MAE", "MSE", "MAPE", "SMAPE"]).T
+Forecast = pd.DataFrame(Results).T
+ComputationalTime = pd.DataFrame(COMPUTATIONAL_TIME, columns=["Computational Time"])
+BestOrder = pd.DataFrame(BEST_ORDER, columns=["p", "d", "q"])
+BestSeasonalOrder = pd.DataFrame(BEST_SEASONAL_ORDER, columns=["P", "D", "Q", "s"])
+
+# Save results to CSV files
+Error.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/SARIMAError.csv', index=False)
+Forecast.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/SARIMAForecast.csv', index=False)
+ComputationalTime.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/SARIMAComputationalTime.csv', index=False)
+BestOrder.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/SARIMABestOrder.csv', index=False)
+BestSeasonalOrder.to_csv('/content/drive/My Drive/Comparative Forecasting/NN5Results/SARIMABestSeasonalOrder.csv', index=False)

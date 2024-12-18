@@ -1,0 +1,51 @@
+Results = []
+MAE = []
+MSE = []
+MAPE = []
+SMAPE = []
+TEST = []
+PARAMETER = []
+COMPUTATIONAL_TIME = []
+
+def smape(y_test, y_pred):
+    return np.mean((2 * np.abs(y_pred - y_test)) / (np.abs(y_test) + np.abs(y_pred)))
+
+def mape(y_test, y_pred):
+    return np.mean(np.abs(y_test - y_pred) / np.abs(y_test))
+
+for i in range(1, 112):
+
+    train_data = NN5.iloc[:735]
+    test_data = NN5.iloc[735:]
+
+    y_train = np.array(train_data.iloc[:, i])
+    y_test = np.array(test_data.iloc[:, i])
+
+    start_time = time.time()  # Start time before training
+    theta_model = ThetaModel(y_train, period=7)
+    theta_fitted = theta_model.fit()
+    y_pred = theta_fitted.forecast(56)
+    end_time = time.time()  # End time after training
+
+    computational_time = end_time - start_time
+    COMPUTATIONAL_TIME.append(computational_time)
+
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+
+    MAE.append(mae)
+    MSE.append(mse)
+    MAPE.append(mape(y_test, y_pred))
+    SMAPE.append(smape(y_test, y_pred))
+
+    Results.append(y_pred)
+    TEST.append(y_test)
+
+error = [MAE, MSE, MAPE, SMAPE]
+Error = pd.DataFrame(error, index=["MAE", "MSE", "MAPE", "SMAPE"]).T  # Use index to label rows instead of columns
+Forecast = pd.DataFrame(Results).T
+ComputationalTime = pd.DataFrame(COMPUTATIONAL_TIME, columns=["Computational Time"])
+
+Error.to_csv('/content/drive/My Drive/NN5Results/ThetaError.csv', index=False)
+Forecast.to_csv('/content/drive/My Drive/NN5Results/ThetaForecast.csv', index=False)
+ComputationalTime.to_csv('/content/drive/My Drive/NN5Results/ThetaComputationalTime.csv', index=False)

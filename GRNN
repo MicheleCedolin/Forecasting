@@ -1,0 +1,61 @@
+Results = []
+MAE = []
+MSE = []
+MAPE = []
+SMAPE = []
+TEST = []
+PARAMETER = []
+COMPUTATIONAL_TIME = []
+
+def smape(y_test,y_pred):
+    return np.mean((2* np.abs(y_pred - y_test))/ ((np.abs(y_test) + np.abs(y_pred))))
+
+def mape(y_test,y_pred):
+    return np.mean(np.abs(y_test - y_pred)/np.abs(y_test))
+
+for i in range(1,112):
+  features['lag1']=NN5.iloc[:,i].shift(1)
+  features['lag2']=NN5.iloc[:,i].shift(2)
+  features['lag3']=NN5.iloc[:,i].shift(3)
+  features['lag4']=NN5.iloc[:,i].shift(4)
+  features['lag5']=NN5.iloc[:,i].shift(5)
+  features['lag6']=NN5.iloc[:,i].shift(6)
+  features['lag7']=NN5.iloc[:,i].shift(7)
+  features['Roll_mean']=NN5.iloc[:,i].rolling(window=7).mean()
+  train_data = features.iloc[8:int(features.shape[0]*0.93)] #ilk 7 satiri lag degerleri na oldugu icin dikkate almadik yoksa 0:int olmasi lazim
+  test_data = features.iloc[int(features.shape[0]*0.93):]
+  x_train = np.array(train_data[['weekday','lag1','lag2','lag3','lag4','lag5','lag6','lag7','Roll_mean']])
+  x_test = np.array(test_data[['weekday','lag1','lag2','lag3','lag4','lag5','lag6','lag7','Roll_mean']])
+  y_train = np.array(train_data.iloc[:,[i]])
+  y_test = np.array(test_data.iloc[:,[i]])
+
+  IGRNN = GRNN()
+  start_time = time.time()  # Start time before training
+
+  IGRNN.fit(x_train,y_train)
+  y_pred = IGRNN.predict(x_test)
+
+  end_time = time.time()  # End time after training
+
+  computational_time = end_time - start_time
+  COMPUTATIONAL_TIME.append(computational_time)
+
+  mae = mean_absolute_error(y_test, y_pred)
+  mse = mean_squared_error(y_test, y_pred)
+
+  MAE.append(mae)
+  MSE.append(mse)
+  MAPE.append(mape(y_test, y_pred))
+  SMAPE.append(smape(y_test, y_pred))
+
+  Results.append(y_pred)
+  TEST.append(y_test)
+
+error = [MAE, MSE, MAPE, SMAPE]
+Error = pd.DataFrame(error, index=["MAE", "MSE", "MAPE", "SMAPE"]).T # Use index to label rows instead of columns
+Forecast = pd.DataFrame(Results).T
+ComputationalTime = pd.DataFrame(COMPUTATIONAL_TIME, columns=["Computational Time"])
+
+Error.to_csv('/content/drive/My Drive/NN5Results/IGRNNError.csv', index=False)
+Forecast.to_csv('/content/drive/My Drive/NN5Results/IGRNNForecast.csv', index=False)
+ComputationalTime.to_csv('/content/drive/My Drive/NN5Results/IGRNNComputationalTime.csv', index=False)
